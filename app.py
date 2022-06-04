@@ -8,6 +8,7 @@ import babel
 from flask import Flask, render_template, request, Response, flash, redirect, url_for
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
@@ -20,9 +21,10 @@ app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 # TODO: connect to a local postgresql database
-
+#database connection url is specified in config.py file 
 #----------------------------------------------------------------------------#
 # Models.
 #----------------------------------------------------------------------------#
@@ -32,12 +34,20 @@ class Venue(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
+    genres = db.Column(db.String, nullable=False)
+    website_link = db.Column(db.String)
+    seeking_talent = db.Column(db.Boolean)
+    seeking_description = db.Column(db.String)
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
     address = db.Column(db.String(120))
     phone = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
+    show = db.relationship('Show', backref='venue', lazy=True)
+
+    def __repr__(self):
+      return f'<Venue {self.id}: "{self.name}", "{self.city}", "{self.state}" ... >'
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
@@ -46,12 +56,33 @@ class Artist(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String)
+    available_from = db.Column(db.Time)
+    available_till = db.Column(db.Time)
+    website_link = db.Column(db.String)
+    seeking_venue = db.Column(db.Boolean)
+    seeking_description = db.Column(db.String)
     city = db.Column(db.String(120))
     state = db.Column(db.String(120))
     phone = db.Column(db.String(120))
     genres = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
+    show = db.relationship('Show', backref='artist', lazy=True)
+
+    def __repr__(self):
+      return f'<Artist {self.id}: "{self.name}", "{self.city}", "{self.state}" ... >'
+
+class Show(db.Model):
+    __tablename__ = 'Show'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String)
+    datetime = db.Column(db.DateTime, nullable=False)
+    venue_id = db.Column(db.Integer, db.ForeignKey("Venue.id"))
+    artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
+
+    def __repr__(self):
+      return f'<Show {self.id}: "{self.name}", "{self.datetime}", "{self.venue_id}" ... >'
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
 
@@ -87,6 +118,7 @@ def index():
 def venues():
   # TODO: replace with real venues data.
   #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
+  #select count(show) from venues group by city and state
   data=[{
     "city": "San Francisco",
     "state": "CA",
@@ -115,6 +147,8 @@ def search_venues():
   # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
   # seach for Hop should return "The Musical Hop".
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
+
+  # select name from artist where name like <%search_string%>
   response={
     "count": 1,
     "data": [{
@@ -511,7 +545,8 @@ if not app.debug:
 
 # Default port:
 if __name__ == '__main__':
-    app.run()
+    app.debug = True
+    app.run(host='127.0.0.1', port=5000)
 
 # Or specify port manually:
 '''
