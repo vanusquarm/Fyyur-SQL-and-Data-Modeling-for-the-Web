@@ -118,7 +118,8 @@ def index():
 def venues():
   # TODO: replace with real venues data.
   #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-  #select count(show) from venues group by city and state
+  #SELECT Venue.city, Venue.state, Venue.id, Venue.name, count(Show.name) as num_upcoming_shows
+  #FROM Show INNNER JOIN Venue ON Show.id = Venue.show_id GROUP BY name
   data=[{
     "city": "San Francisco",
     "state": "CA",
@@ -149,6 +150,9 @@ def search_venues():
   # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
 
   # select name from artist where name like <%search_string%>
+  search_str = request.form['search_term']
+  response_ = Venue.query.filter(Venue.name.like("%"+search_str+"%")).all()
+
   response={
     "count": 1,
     "data": [{
@@ -163,6 +167,9 @@ def search_venues():
 def show_venue(venue_id):
   # shows the venue page with the given venue_id
   # TODO: replace with real venue data from the venues table, using venue_id
+  upcoming_shows = db.session.query(Show).join(Venue).filter(Show.venue_id == venue_id).filter(Show.start_time > datetime.now()).all() #Show.query.filter(Show.venue_id == venue_id).filter(Show.start_time > datetime.now()).all()
+  past_shows = db.session.query(Show).join(Venue).filter(Show.venue_id == venue_id).filter(Show.start_time < datetime.now()).all() #Show.query.filter(Show.venue_id == venue_id).filter(Show.start_time < datetime.now()).all()
+
   data1={
     "id": 1,
     "name": "The Musical Hop",
