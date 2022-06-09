@@ -1,0 +1,17 @@
+INSERT INTO public."Show"(start_time, venue_id, artist_id)
+VALUES
+('2019-05-21 21:30:00', SELECT id from public."Venue" where name='The Musical Hop', SELECT id from public."Artist" where name='Guns N Petals'),
+('2019-06-15 23:00:00', SELECT id from public."Venue" where name='Park Square Live Music & Coffee', SELECT id from public."Artist" where name='Matt Quevedo'),
+('2035-04-01 20:00:00', SELECT id from public."Venue" where name='Park Square Live Music & Coffee', SELECT id from public."Artist" where name='The Wild Sax Band'),
+('2035-04-08 20:00:00', SELECT id from public."Venue" where name='Park Square Live Music & Coffee', SELECT id from public."Artist" where name='The Wild Sax Band'),
+('2035-04-15 20:00:00', SELECT id from public."Venue" where name='Park Square Live Music & Coffee', SELECT id from public."Artist" where name='The Wild Sax Band');
+
+2019-05-21 21:30:00 | The Musical Hop                 | Guns N Petals
+ 2019-06-15 23:00:00 | Park Square Live Music & Coffee | Matt Quevedo
+ 2035-04-01 20:00:00 | Park Square Live Music & Coffee | The Wild Sax Band
+ 2035-04-08 20:00:00 | Park Square Live Music & Coffee | The Wild Sax Band
+ 2035-04-15 20:00:00 | Park Square Live Music & Coffee | The Wild Sax Band
+
+select s.start_time, v.name, a.name from public."Show" s
+join public."Venue" v on s.venue_id=v.id
+join public."Artist" a on s.artist_id=a.id;
