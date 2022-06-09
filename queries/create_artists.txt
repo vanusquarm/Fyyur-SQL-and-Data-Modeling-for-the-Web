@@ -1,4 +1,4 @@
-INSERT INTO public."Artist"(name, genres, city, state, phone, website, facebook_link, seeking_venue, seeking_description, image_link)
+INSERT INTO public."Artist"(name, genres, city, state, phone, website_link, facebook_link, seeking_venue, seeking_description, image_link)
 VALUES
 (
      'Guns N Petals',
