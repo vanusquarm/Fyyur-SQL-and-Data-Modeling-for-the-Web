@@ -5,14 +5,16 @@
 import json
 import dateutil.parser
 import babel
-from flask import Flask, render_template, request, Response, flash, redirect, url_for
+from flask import Flask, render_template, request, Response, flash, redirect, url_for, abort, jsonify
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
+from sqlalchemy import false, true, ARRAY, func
 from forms import *
+import sys
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -32,42 +34,41 @@ migrate = Migrate(app, db)
 class Venue(db.Model):
     __tablename__ = 'Venue'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    genres = db.Column(db.String, nullable=False)
-    website_link = db.Column(db.String)
-    seeking_talent = db.Column(db.Boolean)
-    seeking_description = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    address = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    show = db.relationship('Show', backref='venue', lazy=True)
+    id  = db.Column(db.Integer, primary_key=True) 
+    name  = db.Column(db.String, nullable=False)
+    genres  = db.Column(db.ARRAY(db.String))
+    address  = db.Column(db.String, nullable=False )
+    city  = db.Column(db.String, nullable=False ) 
+    state  = db.Column(db.String, nullable=False)
+    phone  = db.Column(db.String )
+    website  = db.Column(db.String )
+    facebook_link  = db.Column(db.String )
+    seeking_talent  = db.Column(db.Boolean, default = False)
+    seeking_description  = db.Column(db.Text)  
+    image_link  = db.Column(db.String )
+    show_id = db.relationship('Show', backref='venue', lazy=True)
 
     def __repr__(self):
       return f'<Venue {self.id}: "{self.name}", "{self.city}", "{self.state}" ... >'
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
+    #DONE
 
 class Artist(db.Model):
     __tablename__ = 'Artist'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    available_from = db.Column(db.Time)
-    available_till = db.Column(db.Time)
-    website_link = db.Column(db.String)
-    seeking_venue = db.Column(db.Boolean)
-    seeking_description = db.Column(db.String)
-    city = db.Column(db.String(120))
-    state = db.Column(db.String(120))
-    phone = db.Column(db.String(120))
-    genres = db.Column(db.String(120))
-    image_link = db.Column(db.String(500))
-    facebook_link = db.Column(db.String(120))
-    show = db.relationship('Show', backref='artist', lazy=True)
+    id  = db.Column(db.Integer, primary_key=True) 
+    name  = db.Column(db.String, nullable=False) 
+    genres  = db.Column(db.ARRAY(db.String))
+    city  = db.Column(db.String )
+    state  = db.Column(db.String )
+    phone  = db.Column(db.String )   
+    website  = db.Column(db.String )  
+    facebook_link  = db.Column(db.String )
+    seeking_venue  = db.Column(db.Boolean) 
+    seeking_description  = db.Column(db.String )
+    image_link  = db.Column(db.String )
+    show_id = db.relationship('Show', backref='artist', lazy=True)
 
     def __repr__(self):
       return f'<Artist {self.id}: "{self.name}", "{self.city}", "{self.state}" ... >'
@@ -76,15 +77,16 @@ class Show(db.Model):
     __tablename__ = 'Show'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String)
-    datetime = db.Column(db.DateTime, nullable=False)
-    venue_id = db.Column(db.Integer, db.ForeignKey("Venue.id"))
-    artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), nullable=False)
+    start_time = db.Column(db.DateTime, nullable=False)
+    venue_id = db.Column(db.Integer, db.ForeignKey("Venue.id"), nullable=False)
+    artist_id = db.Column(db.Integer, db.ForeignKey("Artist.id"), nullable=False)
 
     def __repr__(self):
-      return f'<Show {self.id}: "{self.name}", "{self.datetime}", "{self.venue_id}" ... >'
+      return f'<Show {self.id}: "{self.start_time}", "{self.venue_id}", "{self.artist_id}" ... >'
+
 
     # TODO: implement any missing fields, as a database migration using Flask-Migrate
+    #DONE
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 
@@ -167,9 +169,7 @@ def search_venues():
 def show_venue(venue_id):
   # shows the venue page with the given venue_id
   # TODO: replace with real venue data from the venues table, using venue_id
-  upcoming_shows = db.session.query(Show).join(Venue).filter(Show.venue_id == venue_id).filter(Show.start_time > datetime.now()).all() #Show.query.filter(Show.venue_id == venue_id).filter(Show.start_time > datetime.now()).all()
-  past_shows = db.session.query(Show).join(Venue).filter(Show.venue_id == venue_id).filter(Show.start_time < datetime.now()).all() #Show.query.filter(Show.venue_id == venue_id).filter(Show.start_time < datetime.now()).all()
-
+  
   data1={
     "id": 1,
     "name": "The Musical Hop",
@@ -471,42 +471,17 @@ def create_artist_submission():
 def shows():
   # displays list of shows at /shows
   # TODO: replace with real venues data.
-  data=[{
-    "venue_id": 1,
-    "venue_name": "The Musical Hop",
-    "artist_id": 4,
-    "artist_name": "Guns N Petals",
-    "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-    "start_time": "2019-05-21T21:30:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 5,
-    "artist_name": "Matt Quevedo",
-    "artist_image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
-    "start_time": "2019-06-15T23:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-01T20:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-08T20:00:00.000Z"
-  }, {
-    "venue_id": 3,
-    "venue_name": "Park Square Live Music & Coffee",
-    "artist_id": 6,
-    "artist_name": "The Wild Sax Band",
-    "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-    "start_time": "2035-04-15T20:00:00.000Z"
-  }]
+  data = db.session\
+    .query(\
+      Show.venue_id, \
+        Venue.name.label('venue_name'),\
+           Show.artist_id, Artist.name.label('artist_name'),\
+              Artist.image_link.label('artist_image_link'), \
+                func.to_char(Show.start_time , 'YYYY-MM-DD HH24:MI:SS').label('start_time')\
+                  )\
+      .join(Venue, Venue.id==Show.venue_id)\
+        .join(Artist, Artist.id==Show.artist_id).all()
+
   return render_template('pages/shows.html', shows=data)
 
 @app.route('/shows/create')
@@ -519,13 +494,33 @@ def create_shows():
 def create_show_submission():
   # called to create new shows in the db, upon submitting new show listing form
   # TODO: insert form data as a new Show record in the db, instead
+  error = False
+  try:
+    start_time = request.form['start_time']
+    venue_id = request.form['venue_id']
+    artist_id = request.form['artist_id']
+    show = Show(start_time=start_time, venue_id=venue_id, artist_id=artist_id)
+    db.session.add(show)
+    db.session.commit()
+  except:
+     error = True
+     db.session.rollback()
+     print(sys.exc_info())
+  finally:
+      db.session.close()
+  if error:
+    # TODO: on unsuccessful db insert, flash an error instead.
+    flash('An error occurred. Show could not be listed.')
+    # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+    abort (400)
+  else:
+    # on successful db insert, flash success
+    flash('Show was successfully listed!')
+    return render_template('pages/home.html')
 
-  # on successful db insert, flash success
-  flash('Show was successfully listed!')
-  # TODO: on unsuccessful db insert, flash an error instead.
-  # e.g., flash('An error occurred. Show could not be listed.')
-  # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
-  return render_template('pages/home.html')
+  
+ 
+  
 
 @app.errorhandler(404)
 def not_found_error(error):
