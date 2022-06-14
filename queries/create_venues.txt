@@ -1,5 +1,5 @@
 INSERT INTO
-public."Venue"(name, genres, address, city, state, phone, website, facebook_link, seeking_talent, seeking_description, image_link)
+public."Venue"(name, genres, address, city, state, phone, website_link, facebook_link, seeking_talent, seeking_description, image_link)
 VALUES
 (
      'The Musical Hop',	
